@@ -91,6 +91,8 @@ func SSDP(ctx context.Context, cb func(*Device) error) error {
 			return fmt.Errorf("failed to get roku device from SSDP response: %w", err)
 		}
 
+		log.Debug("found roku device", zap.String("USN", rokuDev.USN), zap.String("URL", rokuDev.Location.String()), zap.String("group", rokuDev.DeviceGroup))
+
 		if err := cb(rokuDev); err != nil {
 			return fmt.Errorf("SSDP callback returned error: %w", err)
 		}
