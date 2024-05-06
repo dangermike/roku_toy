@@ -76,6 +76,7 @@ func SSDP(ctx context.Context, cb func(*Device) error) error {
 	for {
 		cnt, addr, err := lc.ReadFromUDP(buf)
 		if os.IsTimeout(err) {
+			log.Debug("timeout waiting for SSDP responses", zap.Duration("time", time.Since(start)))
 			break
 		}
 		if err != nil {

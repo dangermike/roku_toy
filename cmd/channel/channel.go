@@ -70,9 +70,9 @@ func setE(cmd *cobra.Command, args []string) error {
 	}
 
 	if ID, err := strconv.Atoi(args[0]); err == nil {
-		return device.Launch(ID)
+		return device.Launch(ctx, ID)
 	}
-	return device.LaunchByName(args[0])
+	return device.LaunchByName(ctx, args[0])
 }
 
 func getE(cmd *cobra.Command, args []string) error {
@@ -86,7 +86,7 @@ func getE(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	app, err := device.ActiveApp()
+	app, err := device.ActiveApp(ctx)
 	if err != nil {
 		return nil
 	}
@@ -105,7 +105,7 @@ func listE(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	apps, err := device.QueryApps()
+	apps, err := device.QueryApps(ctx)
 	if err != nil {
 		return err
 	}
