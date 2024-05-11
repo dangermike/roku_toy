@@ -69,10 +69,19 @@ func setE(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	if ID, err := strconv.Atoi(args[0]); err == nil {
-		return device.Launch(ctx, ID)
+	if _, err := strconv.Atoi(args[0]); err == nil {
+		return device.Launch(ctx, args[0])
 	}
-	return device.LaunchByName(ctx, args[0])
+
+	err = device.LaunchByName(ctx, args[0])
+
+	if errors.Is(err, roku.ErrApplicationNotFound(args[0])) {
+		if lerr := device.Launch(ctx, args[0]); lerr != nil {
+			return err
+		}
+	}
+
+	return err
 }
 
 func getE(cmd *cobra.Command, args []string) error {
@@ -90,7 +99,7 @@ func getE(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return nil
 	}
-	fmt.Printf("%s (%d)\n", app.Name, app.ID)
+	fmt.Printf("%s (%s)\n", app.Name, app.ID)
 	return nil
 }
 
@@ -112,7 +121,7 @@ func listE(cmd *cobra.Command, args []string) error {
 
 	fmt.Printf("%s (%d)\n", "home", 0)
 	for _, app := range apps {
-		fmt.Printf("%s (%d)\n", app.Name, app.ID)
+		fmt.Printf("%s (%s)\n", app.Name, app.ID)
 	}
 	return nil
 }

@@ -7,7 +7,6 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"strconv"
 	"strings"
 	"time"
 
@@ -31,8 +30,14 @@ type appsList struct {
 
 type App struct {
 	Name    string `xml:",innerxml"`
-	ID      int    `xml:"id,attr"`
+	ID      string `xml:"id,attr"`
 	Version string `xml:"version,attr"`
+}
+
+type ErrApplicationNotFound string
+
+func (e ErrApplicationNotFound) Error() string {
+	return fmt.Sprintf("no applications found with a name like '%s'", string(e))
 }
 
 func (rd *Device) QueryApps(ctx context.Context) ([]App, error) {
@@ -91,26 +96,26 @@ func (rd *Device) ActiveApp(ctx context.Context) (App, error) {
 	return apps[0], nil
 }
 
-func (rd *Device) Launch(ctx context.Context, id int) error {
-	if id == 0 {
+func (rd *Device) Launch(ctx context.Context, id string) error {
+	if id == "0" {
 		return rd.Home(ctx)
 	}
 	log := logging.FromContext(ctx)
-	log.Debug("setting channel", zap.Int("channel_id", id))
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, rd.Location.JoinPath("launch", strconv.Itoa(id)).String(), nil)
+	log.Debug("setting channel", zap.String("channel_id", id))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, rd.Location.JoinPath("launch", id).String(), nil)
 	if err != nil {
 		return err
 	}
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return fmt.Errorf("failed to launch app %d: %w", id, err)
+		return fmt.Errorf("failed to launch app %s: %w", id, err)
 	}
 	// 200 successful channel change
 	// 204 channel already set
 	if resp.StatusCode != 200 && resp.StatusCode != 204 {
-		return fmt.Errorf("failed to launch app %d: %s", id, resp.Status)
+		return fmt.Errorf("failed to launch app %s: %s", id, resp.Status)
 	}
-	log.Debug("set channel", zap.Int("channel_id", id))
+	log.Debug("set channel", zap.String("channel_id", id))
 	return nil
 }
 
@@ -150,7 +155,7 @@ func (rd *Device) LaunchByName(ctx context.Context, name string) error {
 
 	app := rd.FindApp(name)
 	if app == nil {
-		return fmt.Errorf("no applications found with a name like '%s'", name)
+		return ErrApplicationNotFound(name)
 	}
 
 	return rd.Launch(ctx, app.ID)
